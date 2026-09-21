@@ -1,0 +1,4 @@
+# 统一换行符：gradlew 必须保持 LF，否则在 Linux/macOS 上执行会报错
+* text=auto
+gradlew text eol=lf
+*.bat text eol=crlf

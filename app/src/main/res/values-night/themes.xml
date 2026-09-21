@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      深色模式下的同名主题。
+      通过 -night 资源限定符自动切换，不需要 AppCompat 的 DayNight 支持。
+    -->
+    <style name="Theme.HtmlBox" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:colorBackground">@color/window_background</item>
+    </style>
+</resources>

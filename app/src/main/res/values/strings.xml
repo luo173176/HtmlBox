@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HTML 盒子</string>
+
+    <!-- 通用操作 -->
+    <string name="action_import">导入 HTML</string>
+    <string name="action_refresh">刷新</string>
+    <string name="action_rename">重命名</string>
+    <string name="action_delete">删除</string>
+    <string name="action_more">更多</string>
+    <string name="action_back">返回</string>
+    <string name="action_back_home">返回首页</string>
+    <string name="action_ok">确定</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_retry">重试</string>
+    <string name="action_desktop_mode">桌面模式</string>
+    <string name="action_desktop_mode_off">关闭桌面模式</string>
+    <string name="action_zoom">开启缩放</string>
+    <string name="action_zoom_off">关闭缩放</string>
+
+    <!-- 首页 -->
+    <string name="empty_title">还没有 HTML</string>
+    <string name="empty_desc">点击右上角导入</string>
+
+    <!-- 重命名 -->
+    <string name="dialog_rename_title">重命名</string>
+    <string name="dialog_rename_label">文件名</string>
+    <string name="dialog_rename_hint">后缀 %1$s 会自动保留</string>
+    <string name="dialog_rename_no_ext">该文件没有后缀，将按原样保留</string>
+
+    <!-- 删除 -->
+    <string name="dialog_delete_title">删除文件</string>
+    <string name="dialog_delete_message">确定要删除「%1$s」吗？该操作不可撤销。</string>
+
+    <!-- JS 对话框 -->
+    <string name="dialog_js_alert_title">提示</string>
+    <string name="dialog_js_confirm_title">确认</string>
+    <string name="dialog_js_prompt_title">输入</string>
+
+    <!-- 运行页 -->
+    <string name="webview_error_title">加载失败</string>
+    <string name="webview_error_unknown">未知错误</string>
+
+    <!-- 提示消息 -->
+    <string name="msg_import_success">导入成功：%1$s</string>
+    <string name="msg_import_renamed">导入成功：%1$s（名称已存在，已自动加序号）</string>
+    <string name="msg_import_not_html">请选择 .html 或 .htm 文件</string>
+    <string name="msg_import_empty">所选文件为空</string>
+    <string name="msg_import_failed">操作失败：%1$s</string>
+    <string name="msg_deleted">已删除：%1$s</string>
+    <string name="msg_delete_failed">删除失败</string>
+    <string name="msg_rename_success">已重命名为：%1$s</string>
+    <string name="msg_rename_conflict">已重命名为：%1$s（名称已存在，已自动加序号）</string>
+    <string name="msg_rename_empty">名称不能为空</string>
+    <string name="msg_rename_invalid">名称不能包含 \\ / : * ? &quot; &lt; &gt; | 等字符</string>
+    <string name="msg_file_missing">文件不存在或已被删除</string>
+</resources>

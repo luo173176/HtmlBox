@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      HtmlBox 应用主题。
+
+      这里刻意使用系统自带的 Material 主题（android:Theme.Material.Light.NoActionBar），
+      而不是 com.google.android.material 的 Theme.Material3.*：
+      1. 本应用是纯 Compose，不需要 AppCompat / Material Components 依赖；
+      2. 真正的颜色由 Compose 的 MaterialTheme 提供，XML 主题只负责窗口背景与系统栏。
+
+      状态栏 / 导航栏的透明与图标颜色由 MainActivity 里的 enableEdgeToEdge() 负责。
+    -->
+    <style name="Theme.HtmlBox" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:colorBackground">@color/window_background</item>
+    </style>
+</resources>
