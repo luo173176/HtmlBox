@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 8.0（API 26）及以上使用自适应图标：
+  背景是品牌靛蓝，前景是白色「</>」，由系统负责裁成圆形 / 方形 / 圆角方形。
+
+  monochrome 供 Android 13+ 的「主题图标」使用，系统会用壁纸取色重新着色。
+  API 24~25 仍然回退到 mipmap-xxxhdpi/ic_launcher.png。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

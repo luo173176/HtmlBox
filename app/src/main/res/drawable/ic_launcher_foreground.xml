@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标前景层：白色「</>」符号。
+
+  画布固定 108x108，但系统只保证中心 66x66 的圆形区域一定可见
+  （外围会被各种形状的遮罩裁掉）。所以图形整体压在 x 32~76、y 36~72 内，
+  并且按 Android 官方建议只使用纯色 + 描边，不依赖渐变，缩到小尺寸也清晰。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 左尖括号 &lt; -->
+    <path
+        android:pathData="M44,42 L32,54 L44,66"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 右尖括号 &gt; -->
+    <path
+        android:pathData="M64,42 L76,54 L64,66"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 中间的斜杠 / -->
+    <path
+        android:pathData="M59,38 L49,70"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+</vector>

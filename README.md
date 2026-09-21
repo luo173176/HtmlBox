@@ -18,7 +18,9 @@
 | 语言 | Kotlin 2.0.21 |
 | UI | Jetpack Compose + Material 3 |
 | 架构 | 单 Activity + Navigation Compose + ViewModel + StateFlow |
-| 首页布局 | 自适应方块网格：`GridCells.Adaptive(160.dp)` + `aspectRatio(1f)` 正方形卡片 |
+| 首页布局 | 自适应方块网格：`GridCells.Adaptive(160.dp)` + `aspectRatio(1f)` 正方形卡片，增删带位移动画 |
+| 配色 | Material 3 自定义靛蓝调色板：用 `@material/material-color-utilities` 从应用图标底色 `#3B2A9C` 生成完整的明暗两套色调，**关闭动态取色**以保证品牌色一致 |
+| 图标 | Android 8+ 自适应图标（靛蓝背景 + 白色 `</>` 前景），Android 13+ 支持主题图标（monochrome） |
 | 构建 | Gradle 8.9 + AGP 8.7.3 + Kotlin DSL |
 | SDK | minSdk 24 / compileSdk 35 / targetSdk 35 |
 | WebView | androidx.webkit `WebViewAssetLoader`（非 file://） |
@@ -31,26 +33,26 @@
 ## 二、直接安装 APK（不想编译就用这个）
 
 到 [Releases](https://github.com/luo173176/HtmlBox/releases) 页面下载
-`HtmlBox-v1.0-debug.apk`（约 10.2 MB）。
+`HtmlBox-v1.1-debug.apk`（约 10.2 MB）。
 
 | 项 | 值 |
 |---|---|
 | 包名 | `com.example.htmlbox` |
-| 版本 | versionCode 1 / versionName 1.0 |
+| 版本 | versionCode 2 / versionName 1.1 |
 | 支持系统 | Android 7.0 (API 24) 及以上 |
 | 应用名 | HTML 盒子 |
 | 签名 | APK Signature Scheme v2，Android Debug 证书 |
 | 权限 | 仅 `INTERNET` |
-| SHA-256 | `bd6dd2327b7cb845e72f46a833330fdc2809366027b26d006c3cc8ccb76e5782` |
+| SHA-256 | `232a8850993f52b69c9a9a9a024087c23416e595df3d647c1bf385c1fe6d47b7` |
 
 安装方式二选一：
 
 ```bash
 # 方式一：adb（手机开启「USB 调试」后连电脑）
-adb install -r HtmlBox-v1.0-debug.apk
+adb install -r HtmlBox-v1.1-debug.apk
 ```
 
-方式二：把 `HtmlBox-v1.0-debug.apk` 直接拷到手机（微信/QQ/数据线均可），
+方式二：把 `HtmlBox-v1.1-debug.apk` 直接拷到手机（微信/QQ/数据线均可），
 在文件管理器里点开安装；若提示「禁止安装未知来源应用」，
 到系统设置里允许对应来源即可。
 
@@ -112,7 +114,7 @@ adb install -r HtmlBox-v1.0-debug.apk
 > 2. 或绕开 wrapper，用本机已解压的 Gradle 直接构建：
 >    `D:\dev\gradle-8.9\gradle-8.9\bin\gradle.bat assembleDebug`
 >
-> 本仓库的 `dist/HtmlBox-v1.0-debug.apk` 就是用第 2 种方式产出的。
+> 本仓库的 `dist/HtmlBox-v1.1-debug.apk` 就是用第 2 种方式产出的。
 
 6. **验收走一遍**
    - 首页显示「还没有 HTML」，点击右上角 + 或底部「导入 HTML」
