@@ -10,6 +10,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.htmlbox.MainViewModel
+import com.example.htmlbox.data.HtmlRepository
+import com.example.htmlbox.ui.editor.EditorScreen
 import com.example.htmlbox.ui.home.HomeScreen
 import com.example.htmlbox.ui.webview.WebViewScreen
 
@@ -27,10 +29,29 @@ object HtmlRoutes {
     /** 运行页参数名。注意：必须声明在 VIEWER 之前，const val 不允许前向引用 */
     const val ARG_FILE_NAME = "fileName"
 
-    /** 运行页：viewer/index.html */
-    const val VIEWER = "viewer/{$ARG_FILE_NAME}"
+    /** 运行页的预览标记参数名（编辑器「运行预览」跳转时为 true） */
+    const val ARG_PREVIEW = "preview"
 
-    fun viewer(fileName: String): String = "viewer/${Uri.encode(fileName)}"
+    /** 运行页：viewer/index.html */
+    const val VIEWER = "viewer/{$ARG_FILE_NAME}?$ARG_PREVIEW={$ARG_PREVIEW}"
+
+    /** 编辑器（新建）：没有文件名参数 */
+    const val EDITOR_NEW = "editor"
+
+    /** 编辑器（编辑已有文件）：editor/index.html */
+    const val EDITOR_EDIT = "editor/{$ARG_FILE_NAME}"
+
+    fun viewer(fileName: String, preview: Boolean = false): String =
+        if (preview) {
+            "viewer/${Uri.encode(fileName)}?$ARG_PREVIEW=true"
+        } else {
+            "viewer/${Uri.encode(fileName)}"
+        }
+
+    fun editor(fileName: String): String = "editor/${Uri.encode(fileName)}"
+
+    /** 编辑器「运行预览」跳转：加载隐藏草稿 .preview.html */
+    fun preview(): String = viewer(HtmlRepository.PREVIEW_FILE_NAME, preview = true)
 }
 
 @Composable
@@ -49,22 +70,66 @@ fun HtmlBoxNavHost(
                 viewModel = viewModel,
                 onOpenHtml = { fileName ->
                     navController.navigate(HtmlRoutes.viewer(fileName))
+                },
+                onNewHtml = {
+                    navController.navigate(HtmlRoutes.EDITOR_NEW)
+                },
+                onEditHtml = { fileName ->
+                    navController.navigate(HtmlRoutes.editor(fileName))
                 }
             )
         }
 
         composable(
-            route = HtmlRoutes.VIEWER,
+            route = HtmlRoutes.EDITOR_NEW
+        ) { backStackEntry ->
+            EditorScreen(
+                sessionKey = backStackEntry.id,
+                fileName = null,
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onRunPreview = { navController.navigate(HtmlRoutes.preview()) }
+            )
+        }
+
+        composable(
+            route = HtmlRoutes.EDITOR_EDIT,
             arguments = listOf(
                 navArgument(HtmlRoutes.ARG_FILE_NAME) { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val fileName = backStackEntry.arguments
                 ?.getString(HtmlRoutes.ARG_FILE_NAME)
+
+            EditorScreen(
+                sessionKey = backStackEntry.id,
+                fileName = fileName,
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onRunPreview = { navController.navigate(HtmlRoutes.preview()) }
+            )
+        }
+
+        composable(
+            route = HtmlRoutes.VIEWER,
+            arguments = listOf(
+                navArgument(HtmlRoutes.ARG_FILE_NAME) { type = NavType.StringType },
+                navArgument(HtmlRoutes.ARG_PREVIEW) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            val fileName = backStackEntry.arguments
+                ?.getString(HtmlRoutes.ARG_FILE_NAME)
                 .orEmpty()
+            val isPreview = backStackEntry.arguments
+                ?.getBoolean(HtmlRoutes.ARG_PREVIEW)
+                ?: false
 
             WebViewScreen(
                 fileName = fileName,
+                preview = isPreview,
                 onBackToHome = { navController.popBackStack() }
             )
         }

@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -110,13 +111,15 @@ private val HTML_GRID_CELLS = GridCells.Adaptive(minSize = 160.dp)
 private val CARD_CORNER = 20.dp
 
 /**
- * 首页：导入按钮 + 已导入 HTML 的自适应方块网格。
+ * 首页：底部按钮新建 HTML、顶栏 + 导入文件，已导入内容以自适应方块网格展示。
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel,
     onOpenHtml: (String) -> Unit,
+    onNewHtml: () -> Unit,
+    onEditHtml: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -185,9 +188,9 @@ fun HomeScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = launchImport,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.action_import)) },
+                onClick = onNewHtml,
+                icon = { Icon(Icons.Filled.Create, contentDescription = null) },
+                text = { Text(stringResource(R.string.action_new)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -216,7 +219,8 @@ fun HomeScreen(
                         item {
                             EmptyState(
                                 modifier = Modifier.fillParentMaxSize(),
-                                onImport = launchImport
+                                onImport = launchImport,
+                                onNew = onNewHtml
                             )
                         }
                     }
@@ -260,6 +264,7 @@ fun HomeScreen(
                                         .format(Date(file.lastModified))
                                 },
                                 onClick = { onOpenHtml(file.name) },
+                                onEdit = { onEditHtml(file.name) },
                                 onRename = { renameTarget = file },
                                 onDelete = { deleteTarget = file },
                                 // 增删时让其余卡片平滑让位
@@ -348,6 +353,7 @@ private fun HtmlMark(
 @Composable
 private fun EmptyState(
     onImport: () -> Unit,
+    onNew: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -371,20 +377,24 @@ private fun EmptyState(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onImport) {
+            Button(onClick = onNew) {
                 Icon(
-                    imageVector = Icons.Filled.Add,
+                    imageVector = Icons.Filled.Create,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.action_new))
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            TextButton(onClick = onImport) {
                 Text(stringResource(R.string.action_import))
             }
         }
     }
 }
 
-/** 单个 HTML 方块卡片：点击运行，长按或右上角 ⋮ 可重命名 / 删除 */
+/** 单个 HTML 方块卡片：点击运行，长按或右上角 ⋮ 可编辑 / 重命名 / 删除 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HtmlFileItem(
@@ -392,6 +402,7 @@ private fun HtmlFileItem(
     sizeText: String,
     timeText: String,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
@@ -463,6 +474,16 @@ private fun HtmlFileItem(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_edit)) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onEdit()
+                        }
+                    )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.action_rename)) },
                         leadingIcon = {

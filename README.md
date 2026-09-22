@@ -3,10 +3,11 @@
 一个用来**导入并离线运行单个 HTML 文件**的 Android 应用。
 
 它不是浏览器，也不是「把 HTML 打包成 APK」的工具，而是一个
-**单 HTML 文件管理器 + 运行器**：
+**单 HTML 文件管理器 + 运行器**。既可以从系统文件选择器导入现成文件，
+也可以直接在应用里写代码、预览执行、保存：
 
 ```
-导入 .html  →  复制到应用内部存储  →  方块网格管理（重命名/删除）  →  WebView 离线运行
+导入 .html / 应用内编写  →  存入应用内部存储  →  方块网格管理（编辑/重命名/删除）  →  WebView 离线运行
 ```
 
 ---
@@ -19,6 +20,7 @@
 | UI | Jetpack Compose + Material 3 |
 | 架构 | 单 Activity + Navigation Compose + ViewModel + StateFlow |
 | 首页布局 | 自适应方块网格：`GridCells.Adaptive(160.dp)` + `aspectRatio(1f)` 正方形卡片，增删带位移动画 |
+| 内置编辑器 | 应用内编写 / 修改 HTML 源码（`BasicTextField` + 等宽字体），运行预览、保存后出现在首页 |
 | 配色 | Material 3 自定义靛蓝调色板：用 `@material/material-color-utilities` 从应用图标底色 `#3B2A9C` 生成完整的明暗两套色调，**关闭动态取色**以保证品牌色一致 |
 | 图标 | Android 8+ 自适应图标（靛蓝背景 + 白色 `</>` 前景），Android 13+ 支持主题图标（monochrome） |
 | 构建 | Gradle 8.9 + AGP 8.7.3 + Kotlin DSL |
@@ -33,26 +35,26 @@
 ## 二、直接安装 APK（不想编译就用这个）
 
 到 [Releases](https://github.com/luo173176/HtmlBox/releases) 页面下载
-`HtmlBox-v1.1-debug.apk`（约 10.2 MB）。
+`HtmlBox-v1.2-debug.apk`（约 10.3 MB）。
 
 | 项 | 值 |
 |---|---|
 | 包名 | `com.example.htmlbox` |
-| 版本 | versionCode 2 / versionName 1.1 |
+| 版本 | versionCode 3 / versionName 1.2 |
 | 支持系统 | Android 7.0 (API 24) 及以上 |
 | 应用名 | HTML 盒子 |
 | 签名 | APK Signature Scheme v2，Android Debug 证书 |
 | 权限 | 仅 `INTERNET` |
-| SHA-256 | `232a8850993f52b69c9a9a9a024087c23416e595df3d647c1bf385c1fe6d47b7` |
+| SHA-256 | `ea72d691f21e2f107d1b7a6075bb89b8e321edba2ed30f1b40b96af50968c07d` |
 
 安装方式二选一：
 
 ```bash
 # 方式一：adb（手机开启「USB 调试」后连电脑）
-adb install -r HtmlBox-v1.1-debug.apk
+adb install -r HtmlBox-v1.2-debug.apk
 ```
 
-方式二：把 `HtmlBox-v1.1-debug.apk` 直接拷到手机（微信/QQ/数据线均可），
+方式二：把 `HtmlBox-v1.2-debug.apk` 直接拷到手机（微信/QQ/数据线均可），
 在文件管理器里点开安装；若提示「禁止安装未知来源应用」，
 到系统设置里允许对应来源即可。
 
@@ -114,15 +116,19 @@ adb install -r HtmlBox-v1.1-debug.apk
 > 2. 或绕开 wrapper，用本机已解压的 Gradle 直接构建：
 >    `D:\dev\gradle-8.9\gradle-8.9\bin\gradle.bat assembleDebug`
 >
-> 本仓库的 `dist/HtmlBox-v1.1-debug.apk` 就是用第 2 种方式产出的。
+> 本仓库的 `dist/HtmlBox-v1.2-debug.apk` 就是用第 2 种方式产出的。
 
 6. **验收走一遍**
-   - 首页显示「还没有 HTML」，点击右上角 + 或底部「导入 HTML」
-   - 用系统文件选择器选一个 `.html` 文件
-   - 方块网格里出现该项（文件名 / 大小 / 修改时间）
-   - 点进去 → WebView 运行，JS 生效
-   - 按返回键：网页有历史则后退，无历史则回首页
-   - 长按卡片或点右上角 ⋮ → 重命名 / 删除，均有确认与提示
+   - 首页显示「还没有 HTML」，点右下角「新建 HTML」→ 编辑器打开，已预填可运行模板
+   - 改几行代码 → 右上角 ▶「运行预览」→ WebView 执行（模板里的按钮、alert 都有效）
+   - 预览页返回键回到编辑器，**代码原样保留**
+   - 「保存」→ 输入文件名（`.html` 自动加）→ 返回首页，方块网格出现新卡片
+   - 首页右上角 + 或空状态按钮「导入 HTML」，用系统文件选择器导入 `.html`
+   - 点卡片 → WebView 运行，JS 生效
+   - 卡片长按或右上角 ⋮ → 编辑 / 重命名 / 删除，均有确认与提示
+   - 「编辑」打开的是该文件的最新内容，保存即覆盖
+   - 编辑器里改了代码直接按返回 → 弹「放弃修改？」确认，不会静默丢代码
+   - 按返回键：网页有历史则后退，无历史则回上一页
    - 杀掉进程重新打开 → 卡片仍在（文件在内部存储，不会丢）
 
 ---
@@ -181,11 +187,17 @@ https://appassets.androidplatform.net/htmls/index.html
    桌面模式需要重载才能生效（UA 变更必须重新发起请求）；
    缩放开关即时生效，不重载，所以不会丢失页面状态。
 
+8. **内置编辑器是纯文本编辑器**
+   没有语法高亮、自动补全，也不自动保存。运行预览用的是隐藏草稿
+   `.preview.html`（首页列表会过滤点开头的文件），它不代表已保存。
+   编辑超大文件（几百 KB 以上）时输入可能明显卡顿。
+
 ---
 
 ## 六、后续可扩展方向
 
 - 导入文件夹（`ActivityResultContracts.OpenDocumentTree`），让相对路径资源真正可用
+- 编辑器加语法高亮（行号栏 + 简易 HTML/JS 着色）
 - 用 Zip 打包多文件 HTML 项目并解压到 `htmls/<名字>/`
 - `WebViewClient.onPageFinished` 时把标题写回卡片
 - 给 HTML 暴露一个最小的原生桥（`@JavascriptInterface`）用于退出 / 震动 / 读取剪贴板

@@ -126,6 +126,8 @@ fun WebViewScreen(
     fileName: String,
     onBackToHome: () -> Unit,
     modifier: Modifier = Modifier,
+    /** true 表示这是编辑器的「运行预览」：标题显示「预览」，返回键回到编辑器 */
+    preview: Boolean = false,
 ) {
     val context = LocalContext.current
     val holder = remember { WebViewHolder() }
@@ -183,7 +185,11 @@ fun WebViewScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = fileName.ifEmpty { appName },
+                        text = if (preview) {
+                            stringResource(R.string.editor_preview_title)
+                        } else {
+                            fileName.ifEmpty { appName }
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -263,14 +269,17 @@ fun WebViewScreen(
                                     holder.webView?.applyZoom(next)
                                 }
                             )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_back_home)) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onBackToHome()
-                                }
-                            )
+                            // 预览模式下返回键就是回编辑器，不需要「返回首页」
+                            if (!preview) {
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_back_home)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onBackToHome()
+                                    }
+                                )
+                            }
                         }
                     }
                 },

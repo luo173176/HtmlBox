@@ -45,6 +45,16 @@ sealed interface RenameResult {
     data class Failed(val reason: String) : RenameResult
 }
 
+/** 编辑器保存结果 */
+sealed interface SaveResult {
+    /** @param renamed 是否因为重名被自动加序号 */
+    data class Success(val name: String, val renamed: Boolean) : SaveResult
+
+    data object EmptyName : SaveResult
+    data object InvalidName : SaveResult
+    data class Failed(val reason: String) : SaveResult
+}
+
 /**
  * HTML 文件仓库。
  *
@@ -69,17 +79,64 @@ class HtmlRepository(context: Context) {
     // 查询
     // ------------------------------------------------------------------
 
-    /** 扫描目录，按修改时间倒序返回（最新的排在最前） */
+    /**
+     * 扫描目录，按修改时间倒序返回（最新的排在最前）。
+     * 以点开头的文件是内部草稿（如编辑器的 .preview.html），不进列表。
+     */
     fun list(): List<HtmlFile> = htmlsDir.listFiles()
         .orEmpty()
         .asSequence()
-        .filter { it.isFile && it.name.hasHtmlExtension() }
+        .filter { it.isFile && !it.name.startsWith(".") && it.name.hasHtmlExtension() }
         .sortedByDescending { it.lastModified() }
         .map { HtmlFile(name = it.name, sizeBytes = it.length(), lastModified = it.lastModified()) }
         .toList()
 
     /** 根据文件名取真实文件对象，做路径穿越校验 */
     fun fileFor(name: String): File? = resolve(name)?.takeIf { it.isFile }
+
+    /** 读取文件全文（编辑器打开已有文件时用），失败返回 null */
+    fun read(name: String): String? = try {
+        resolve(name)?.takeIf { it.isFile }?.readText()
+    } catch (e: IOException) {
+        null
+    }
+
+    /**
+     * 把当前编辑内容写进预览草稿文件 .preview.html，
+     * 运行页用它加载，从而实现「不保存也能预览」。
+     * 该文件被 [list] 过滤，永远不会出现在首页。
+     */
+    fun writePreview(content: String) {
+        runCatching { File(htmlsDir, PREVIEW_FILE_NAME).writeText(content) }
+    }
+
+    /**
+     * 编辑器保存已有文件：直接覆盖。
+     * 文件若已在别处被删掉，会按原文件名重新创建，编辑内容不丢。
+     */
+    fun overwrite(name: String, content: String): Boolean = try {
+        resolve(name)?.let { it.writeText(content); true } ?: false
+    } catch (e: IOException) {
+        false
+    }
+
+    /**
+     * 编辑器新建文件：固定 .html 后缀，重名自动加序号。
+     * 校验规则与 [rename] 一致。
+     */
+    fun create(baseName: String, content: String): SaveResult {
+        val base = cleanedBaseName(baseName)
+            ?: return if (baseName.isBlank()) SaveResult.EmptyName else SaveResult.InvalidName
+        val desiredName = "$base.html"
+        val target = resolveUniqueFile(desiredName)
+        return try {
+            target.writeText(content)
+            SaveResult.Success(name = target.name, renamed = target.name != desiredName)
+        } catch (e: IOException) {
+            target.delete()
+            SaveResult.Failed(e.message ?: "写入失败")
+        }
+    }
 
     // ------------------------------------------------------------------
     // 导入
@@ -131,17 +188,8 @@ class HtmlRepository(context: Context) {
     fun rename(oldName: String, newBaseName: String): RenameResult {
         val source = resolve(oldName)?.takeIf { it.isFile } ?: return RenameResult.NotFound
 
-        var base = newBaseName.trim()
-        if (base.isEmpty()) return RenameResult.EmptyName
-
-        // 用户可能连后缀一起输入，这里统一剥掉，后缀始终由原文件决定
-        val lower = base.lowercase(Locale.ROOT)
-        if (lower.endsWith(EXT_HTML) || lower.endsWith(EXT_HTM)) {
-            base = base.substringBeforeLast('.')
-        }
-        base = base.trim().trimEnd('.')
-        if (base.isEmpty()) return RenameResult.EmptyName
-        if (base.any { it in ILLEGAL_CHARS || it.isISOControl() }) return RenameResult.InvalidName
+        val base = cleanedBaseName(newBaseName)
+            ?: return if (newBaseName.isBlank()) RenameResult.EmptyName else RenameResult.InvalidName
 
         val extension = source.name.substringAfterLast('.', "")
         val desiredName =
@@ -171,6 +219,28 @@ class HtmlRepository(context: Context) {
     // ------------------------------------------------------------------
     // 内部工具
     // ------------------------------------------------------------------
+
+    /**
+     * 校验并清洗用户输入的基础名：
+     * - 剥掉用户可能连着输入的 .html / .htm 后缀（后缀统一由调用方决定）
+     * - 去掉首尾空白与首尾点号。去掉开头的点是为了防止造出隐藏文件
+     *   （以点开头会被 [list] 过滤，用户会「保存成功却在首页看不到」）
+     * - 含路径分隔符等非法字符时返回 null
+     */
+    private fun cleanedBaseName(raw: String): String? {
+        var base = raw.trim()
+        if (base.isEmpty()) return null
+
+        val lower = base.lowercase(Locale.ROOT)
+        if (lower.endsWith(EXT_HTML) || lower.endsWith(EXT_HTM)) {
+            base = base.substringBeforeLast('.')
+        }
+
+        base = base.trim().trim('.')
+        if (base.isEmpty()) return null
+        if (base.any { it in ILLEGAL_CHARS || it.isISOControl() }) return null
+        return base
+    }
 
     /**
      * 把用户输入的名字解析成 htmlsDir 下的 File。
@@ -237,6 +307,12 @@ class HtmlRepository(context: Context) {
 
         /** WebViewAssetLoader 的默认域名 */
         const val ASSET_DOMAIN = "appassets.androidplatform.net"
+
+        /**
+         * 编辑器的预览草稿文件。以点开头，[list] 会把它过滤掉，
+         * 所以它只用于「运行预览」，永远不会出现在首页。
+         */
+        const val PREVIEW_FILE_NAME = ".preview.html"
 
         const val EXT_HTML = ".html"
         const val EXT_HTM = ".htm"
