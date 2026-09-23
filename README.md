@@ -26,6 +26,7 @@
 | 构建 | Gradle 8.9 + AGP 8.7.3 + Kotlin DSL |
 | SDK | minSdk 24 / compileSdk 35 / targetSdk 35 |
 | WebView | androidx.webkit `WebViewAssetLoader`（非 file://） |
+| 运行兼容性 | 对齐手机浏览器：接管渲染进程崩溃、站内历史、第三方 Cookie、文件选择、HTML5 全屏、下载转交、UA 去 `wv` 标记（详见第五节） |
 | 文件导入 | Storage Access Framework（`ActivityResultContracts.OpenDocument`） |
 | 持久化 | 直接扫描 `filesDir/htmls/`，无 Room、无数据库 |
 | 权限 | 仅 `INTERNET`，**不需要任何存储权限** |
@@ -35,26 +36,26 @@
 ## 二、直接安装 APK（不想编译就用这个）
 
 到 [Releases](https://github.com/luo173176/HtmlBox/releases) 页面下载
-`HtmlBox-v1.2-debug.apk`（约 10.3 MB）。
+`HtmlBox-v1.3-debug.apk`（约 10.3 MB）。
 
 | 项 | 值 |
 |---|---|
 | 包名 | `com.example.htmlbox` |
-| 版本 | versionCode 3 / versionName 1.2 |
+| 版本 | versionCode 4 / versionName 1.3 |
 | 支持系统 | Android 7.0 (API 24) 及以上 |
 | 应用名 | HTML 盒子 |
 | 签名 | APK Signature Scheme v2，Android Debug 证书 |
 | 权限 | 仅 `INTERNET` |
-| SHA-256 | `ea72d691f21e2f107d1b7a6075bb89b8e321edba2ed30f1b40b96af50968c07d` |
+| SHA-256 | `6b0fcc55b29b97450df50001f20068b272e9991f52656a77ef11a7dcf5607c67` |
 
 安装方式二选一：
 
 ```bash
 # 方式一：adb（手机开启「USB 调试」后连电脑）
-adb install -r HtmlBox-v1.2-debug.apk
+adb install -r HtmlBox-v1.3-debug.apk
 ```
 
-方式二：把 `HtmlBox-v1.2-debug.apk` 直接拷到手机（微信/QQ/数据线均可），
+方式二：把 `HtmlBox-v1.3-debug.apk` 直接拷到手机（微信/QQ/数据线均可），
 在文件管理器里点开安装；若提示「禁止安装未知来源应用」，
 到系统设置里允许对应来源即可。
 
@@ -116,7 +117,7 @@ adb install -r HtmlBox-v1.2-debug.apk
 > 2. 或绕开 wrapper，用本机已解压的 Gradle 直接构建：
 >    `D:\dev\gradle-8.9\gradle-8.9\bin\gradle.bat assembleDebug`
 >
-> 本仓库的 `dist/HtmlBox-v1.2-debug.apk` 就是用第 2 种方式产出的。
+> 本仓库的 `dist/HtmlBox-v1.3-debug.apk` 就是用第 2 种方式产出的。
 
 6. **验收走一遍**
    - 首页显示「还没有 HTML」，点右下角「新建 HTML」→ 编辑器打开，已预填可运行模板
@@ -129,6 +130,11 @@ adb install -r HtmlBox-v1.2-debug.apk
    - 「编辑」打开的是该文件的最新内容，保存即覆盖
    - 编辑器里改了代码直接按返回 → 弹「放弃修改？」确认，不会静默丢代码
    - 按返回键：网页有历史则后退，无历史则回上一页
+   - 单页应用（`pushState` 换页）按返回键应逐条回退站内历史，而不是直接跳回首页
+   - 页面里的 `<input type="file">` 能弹出系统文件选择器，选完文件名回填
+   - 视频点全屏 → 铺满黑底覆盖层，返回键先退全屏
+   - 菜单「打印 / 存为 PDF」能拉起系统打印界面
+   - 跑一个吃内存的页面把它搞崩：应用不闪退，显示「渲染进程已停止」，点重试可恢复
    - 杀掉进程重新打开 → 卡片仍在（文件在内部存储，不会丢）
 
 ---
@@ -155,7 +161,38 @@ https://appassets.androidplatform.net/htmls/index.html
 
 ---
 
-## 五、已知限制
+## 五、「浏览器里正常，盒子里不正常」怎么排查
+
+HTML 在浏览器正常、在盒子里出问题，绝大多数不是文件坏了，而是
+**WebView 与完整浏览器的差异**。v1.3 逐项处理了下面这些，遇到对应症状时先照表核对：
+
+| 症状 | 原因 | 现在的处理 |
+|---|---|---|
+| 打开复杂页面（Three.js / 大表格 / 视频）后**整个应用闪退** | 渲染进程内存超限被系统回收，默认会把宿主进程一起带走 | 接管 `onRenderProcessGone`：只销毁这个 WebView，提示「渲染进程已停止」，点重试自动重建并重载 |
+| 点站内菜单/翻页后按返回键，**直接退回首页** | 单页应用用 `history.pushState` / `location.hash` 换页，不触发 `onPageStarted`，返回栈判断不到新历史 | 接管 `doUpdateVisitedHistory`，实时刷新 `canGoBack` |
+| 打开后**变成一堆源码**（黑色纯文本） | 文件名后缀是大写（`REPORT.HTML`），按后缀猜 MIME 猜不出 `text/html` | 导入时把 HTML 后缀统一转小写 |
+| 内嵌的地图、播放器、登录 iframe **拿不到会话** | WebView 默认禁第三方 Cookie | `setAcceptCookie(true)` + `setAcceptThirdPartyCookies(webView, true)`，页面加载完与应用退出时 `flush()` 落盘 |
+| `<input type="file">` **点了没反应** | 未实现 `onShowFileChooser` | 接管并弹出系统文件选择器（SAF，多选了），支持 `accept`；授权转持久化，页面重开仍可读 |
+| 视频 / 画布点**全屏**没反应 | 未实现 `onShowCustomView` | 全屏内容以黑色覆盖层显示，返回键先退全屏 |
+| 某些站点/CDN **直接拒绝服务** | WebView 默认 UA 带 `wv` 标记，被识别为内嵌浏览器 | 去掉 `wv` 标记，UA 与手机 Chrome 一致；桌面模式仍用完整桌面 UA |
+| 点**下载附件**没反应 | WebView 不能自己落地文件 | `setDownloadListener` 转交系统浏览器，并给一条提示 |
+| 中文页面**显示乱码** | 页面没写 `charset`，兜底编码不确定 | `defaultTextEncodingName = "UTF-8"`（与本项目导出的文件一致） |
+| 页面**布局/缩放**和手机浏览器不一致 | viewport 相关开关组合与浏览器不同 | `useWideViewPort` + `loadWithOverviewMode` 常开：有 `<meta name="viewport">` 按其排版，没有的按 980px 桌面宽度整体缩放，与手机 Chrome 行为一致 |
+| 图片/脚本 404 但**看不出为什么** | 子资源失败默认静默 | 子资源失败写入 logcat（TAG `HtmlBox`），debug 包可用 `chrome://inspect` 直接看 Network/Console |
+
+仍未解决、且只能靠改 HTML 绕开的：
+
+- **`window.print()`**：入口回调 `WebChromeClient.onPrintRequest` 不是公开 API，页面里的打印按钮
+  仍无响应。请改用运行页菜单 **「打印 / 存为 PDF」**，走系统打印框架，效果与浏览器打印对话框一致。
+- **摄像头 / 麦克风 / 定位**（`getUserMedia`、`navigator.geolocation`）：需要额外申请
+  `CAMERA` / `RECORD_AUDIO` / `ACCESS_FINE_LOCATION` 运行时权限，与本应用「只要 INTERNET 权限」的
+  定位冲突，因此未开启；页面应把这类功能当作不可用环境降级。
+- **`window.open` / `target="_blank"`**：只支持单窗口，会复用当前 WebView（返回键可回来），
+  但 JS 拿到的是 `null`，`window.open(...).document.write(...)` 这类写法会报错。
+
+---
+
+## 六、已知限制
 
 1. **单个 HTML 文件，不含外部资源**
    导入的只是一个文件。如果 HTML 里用 `<img src="./pic.png">` 之类的
@@ -173,28 +210,25 @@ https://appassets.androidplatform.net/htmls/index.html
    真正能持久化的是 `localStorage` / `IndexedDB`（由 `domStorageEnabled` 提供）。
    注意：这两者的数据也存在应用私有目录里，**卸载应用或清除应用数据会一并丢失**。
 
-4. **不支持 `<input type="file">`**
-   没有实现 `WebChromeClient.onShowFileChooser`，页面里的文件选择框点了没反应。
-
-5. **`allowFileAccess = true` 是兼容性妥协**
+4. **`allowFileAccess = true` 是兼容性妥协**
    按需求保留了该开关，理论上 HTML 可以读取 `file://` 路径。
    如果只跑自己的 HTML，建议改为 `false`（本应用的资源加载走 asset loader，不依赖它）。
 
-6. **不支持多窗口 / 新标签页**
+5. **不支持多窗口 / 新标签页**
    `setSupportMultipleWindows(false)`，`window.open` 会在同一个 WebView 里打开。
 
-7. **缩放开关不重载页面**
+6. **缩放开关不重载页面**
    桌面模式需要重载才能生效（UA 变更必须重新发起请求）；
    缩放开关即时生效，不重载，所以不会丢失页面状态。
 
-8. **内置编辑器是纯文本编辑器**
+7. **内置编辑器是纯文本编辑器**
    没有语法高亮、自动补全，也不自动保存。运行预览用的是隐藏草稿
    `.preview.html`（首页列表会过滤点开头的文件），它不代表已保存。
    编辑超大文件（几百 KB 以上）时输入可能明显卡顿。
 
 ---
 
-## 六、后续可扩展方向
+## 七、后续可扩展方向
 
 - 导入文件夹（`ActivityResultContracts.OpenDocumentTree`），让相对路径资源真正可用
 - 编辑器加语法高亮（行号栏 + 简易 HTML/JS 着色）
@@ -207,7 +241,7 @@ https://appassets.androidplatform.net/htmls/index.html
 
 ---
 
-## 七、开源协议
+## 八、开源协议
 
 [MIT License](LICENSE) © 2026 luo173176
 

@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.htmlbox"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         // 矢量图兼容支持（低版本设备也能渲染 VectorDrawable）
         vectorDrawables { useSupportLibrary = true }

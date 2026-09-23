@@ -293,7 +293,16 @@ class HtmlRepository(context: Context) {
         fileName.trim().forEach { ch ->
             builder.append(if (ch.isISOControl() || ch in ILLEGAL_CHARS) '_' else ch)
         }
-        return builder.toString().trim().trimEnd('.')
+        val cleaned = builder.toString().trim().trimEnd('.')
+        // 后缀统一转小写：报告类文件常叫 REPORT.HTML，而 WebViewAssetLoader
+        // 按后缀猜 MIME，大写后缀可能猜不出 text/html，页面就会被当成纯文本
+        // 显示成一堆源码。
+        val extension = cleaned.substringAfterLast('.', "")
+        return if (extension.hasHtmlExtension()) {
+            cleaned.substringBeforeLast('.') + extension.lowercase(Locale.ROOT)
+        } else {
+            cleaned
+        }
     }
 
     private fun String.hasHtmlExtension(): Boolean {

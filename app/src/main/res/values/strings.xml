@@ -21,6 +21,7 @@
     <string name="action_desktop_mode_off">关闭桌面模式</string>
     <string name="action_zoom">开启缩放</string>
     <string name="action_zoom_off">关闭缩放</string>
+    <string name="action_print">打印 / 存为 PDF</string>
 
     <!-- 首页 -->
     <string name="empty_title">还没有 HTML</string>
@@ -60,6 +61,8 @@
     <!-- 运行页 -->
     <string name="webview_error_title">加载失败</string>
     <string name="webview_error_unknown">未知错误</string>
+    <string name="webview_error_render">页面渲染进程已停止（内存不足或脚本崩溃）。点按重试会重新加载本页。</string>
+    <string name="webview_download_handoff">该文件不适合内嵌显示，已交给浏览器下载</string>
 
     <!-- 提示消息 -->
     <string name="msg_import_success">导入成功：%1$s</string>
